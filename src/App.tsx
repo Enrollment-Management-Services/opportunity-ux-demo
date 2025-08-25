@@ -20,6 +20,8 @@ interface TargetResource {
   name: string
   description: string
   assignedCustomers: Customer[]
+  costPerInterval?: number,
+  annualIntervals?: number,
 }
 
 const initialCustomers: Customer[] = [
@@ -53,6 +55,8 @@ const initialTargetResources: TargetResource[] = [
     id: "resource-4",
     name: "⬤ Alternative Employer",
     description: "Kroger 2026 Gold Tier",
+    costPerInterval: 54.12,
+    annualIntervals: 26,
     assignedCustomers: [],
   }
 ]
@@ -184,6 +188,7 @@ export default function DragDropApp() {
                 <div className="mb-4">
                   <h3 className="font-semibold text-card-foreground mb-2">{resource.name}</h3>
                   <p className="text-sm text-muted-foreground">{resource.description}</p>
+                  {resource.costPerInterval ? <p className="text-sm text-muted-foreground">Cost: {usd.format(resource.costPerInterval)} * {resource.annualIntervals} / year = {usd.format(resource.costPerInterval * (resource.annualIntervals ?? 1))}</p> : ''}
                 </div>
 
                 {/* Drop Zone */}
@@ -251,16 +256,19 @@ export default function DragDropApp() {
           </div>
         </div>
       </div>
-      <div>
-        <p>Claim Impact: {
-          [
-            ...targetResources.flatMap(targetResource => targetResource.assignedCustomers),
-            ...customers
-          ].reduce(
-            (acc, customer) => acc + (customer.defaultEnrolled ? customer.claimImpact : 0), 
-            0
-          )
-        }</p>
+      <div className="flex gap-6">
+        <div className="p-6">
+          <h2 className="text-xl font-semibold text-foreground mb-6 mt-6">Summary</h2>
+          <p>Claim Impact: {
+            usd.format([
+              ...targetResources.flatMap(targetResource => targetResource.assignedCustomers),
+              ...customers
+            ].reduce(
+              (acc, customer) => acc + (customer.defaultEnrolled ? customer.claimImpact : 0), 
+              0
+            ))
+          }</p>
+        </div>
       </div>
     </div>
   )
