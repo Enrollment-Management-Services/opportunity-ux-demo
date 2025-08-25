@@ -5,8 +5,10 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 import { usd } from "./lib/utils"
+import { Input } from "./components/ui/input"
 
 interface Customer {
   id: string
@@ -22,6 +24,8 @@ interface TargetResource {
   assignedCustomers: Customer[]
   costPerInterval?: number,
   annualIntervals?: number,
+  isAltResource: boolean,
+  isGovtPlan?: boolean,
 }
 
 const initialCustomers: Customer[] = [
@@ -37,27 +41,44 @@ const initialTargetResources: TargetResource[] = [
     id: "resource-1",
     name: "◯ Employee",
     description: "",
+    isAltResource: false,
     assignedCustomers: [],
   },
   {
     id: "resource-2",
     name: "◯ Family",
     description: "",
+    isAltResource: false,
     assignedCustomers: [],
   },
   {
     id: "resource-3",
     name: "⬤ Medicare",
     description: "",
+    isAltResource: true,
+    isGovtPlan: true,
+    costPerInterval: 421,
+    annualIntervals: 12,
     assignedCustomers: []
   },
   {
     id: "resource-4",
     name: "⬤ Alternative Employer",
     description: "Kroger 2026 Gold Tier",
+    isAltResource: true,
     costPerInterval: 54.12,
     annualIntervals: 26,
     assignedCustomers: [],
+  }
+]
+
+const initialTools: FinancialTool[] = [
+  {
+    name: 'Flat Opt-out Credit',
+    isUsed: false,
+    optOutTotal: 0,
+    singleCredit: 6000,
+    multiCredit: 12000,
   }
 ]
 
@@ -86,6 +107,7 @@ export default function DragDropApp() {
   const [targetResources, setTargetResources] = useState<TargetResource[]>(initialTargetResources)
   const [draggedCustomer, setDraggedCustomer] = useState<Customer | null>(null)
   const [dragOverResource, setDragOverResource] = useState<string | null>(null)
+  const [override, setOverride] = useState<boolean>(false);
 
   const handleDragStart = (customer: Customer) => {
     setDraggedCustomer(customer)
@@ -164,19 +186,29 @@ export default function DragDropApp() {
       }
     }));
   }
-  
 
   return (
-    <div>
+    <div className="bg-blue-50">
+      <h1 className="text-3xl font-bold text-foreground p-6">Funk, Stephen Opportunity</h1>
+      <div className="ml-12 mb-4">
+        <div className="flex items-center gap-6">
+          <Label htmlFor="maxEnrollment">Max Enrollment Level</Label>
+          <Input id="maxEnrollment" title="Max Enrollment" className="w-fit" value="Family" disabled></Input>
+        </div>
+        <div className="flex items-center gap-6">
+          <Label htmlFor="defaultEnrollment">Default Enrollment Level</Label>
+          <Input id="defaultEnrollment" className="w-fit" value="Employee/Child" disabled></Input>
+        </div>
+      </div>
       <div className="flex gap-6">
         {/* Target Resources Lane - Larger Left Side */}
-        <div className="flex-2 bg-background border border-border rounded-lg p-6">
+        <div className="flex-2 bg-green-50 border border-border rounded-lg p-6">
           <h2 className="text-xl font-semibold text-foreground mb-6">Target Resources</h2>
           <div >
             {targetResources.map((resource) => (
               <Card
                 key={resource.id}
-                className={`p-4 transition-all duration-200 ${
+                className={`p-4 transition-all duration-200 gap-2 ${
                   dragOverResource === resource.id
                     ? "border-primary border-2 bg-accent/10"
                     : "border-border hover:border-accent"
@@ -188,7 +220,14 @@ export default function DragDropApp() {
                 <div className="mb-4">
                   <h3 className="font-semibold text-card-foreground mb-2">{resource.name}</h3>
                   <p className="text-sm text-muted-foreground">{resource.description}</p>
-                  {resource.costPerInterval ? <p className="text-sm text-muted-foreground">Cost: {usd.format(resource.costPerInterval)} * {resource.annualIntervals} / year = {usd.format(resource.costPerInterval * (resource.annualIntervals ?? 1))}</p> : ''}
+                  {resource.costPerInterval 
+                    ? <p className="text-sm text-muted-foreground">
+                      <strong>Cost</strong>: {usd.format(resource.costPerInterval)}
+                      × {resource.annualIntervals} paychecks per year is <strong>{usd.format(resource.costPerInterval * (resource.annualIntervals ?? 1))}</strong>
+                    </p>
+                    : ''
+                  }
+                  {resource.isGovtPlan ? <p className="text-sm text-muted-foreground"><strong>Non-Employer Plan</strong></p> : ""}
                 </div>
 
                 {/* Drop Zone */}
@@ -257,17 +296,73 @@ export default function DragDropApp() {
         </div>
       </div>
       <div className="flex gap-6">
-        <div className="p-6">
+        <div className="p-6 flex-1">
           <h2 className="text-xl font-semibold text-foreground mb-6 mt-6">Summary</h2>
           <p>Claim Impact: {
-            usd.format([
-              ...targetResources.flatMap(targetResource => targetResource.assignedCustomers),
-              ...customers
-            ].reduce(
+            usd.format(targetResources.filter(targetResources => targetResources.isAltResource).flatMap(targetResource => targetResource.assignedCustomers).reduce(
               (acc, customer) => acc + (customer.defaultEnrolled ? customer.claimImpact : 0), 
               0
             ))
           }</p>
+          <p>Opt-out Credit: <em>[Some function of everything in the Financial Tools table]</em></p>
+        </div>
+        <div className="p-6 flex-2">
+          <h2 className="text-xl font-semibold text-foreground mb-6">Financial Tools</h2>
+          <div className="flex items-center gap-6 m-6">
+            <Checkbox id="override" onClick={() => setOverride(!override)}></Checkbox>
+            <Label htmlFor="override">Enable Override</Label>
+          </div>
+          <Card>
+              <div className="flex items-center gap-6 ml-6">
+                <Checkbox id="cost-based" value="cost-based"></Checkbox>
+                <Label htmlFor="cost-based">Full Premium Reimbursement</Label>
+                <Input className="w-fit" id="hsa-multi" type="number" disabled={!override} value={1407.12} />
+              </div>
+          </Card>
+          <Card className="gap-0 pl-12">
+            <Label>Flat Opt-out Credit</Label>
+            <RadioGroup className="mt-4">
+              <div className="flex items-center gap-6">
+                <RadioGroupItem id="hsa-none" value="hsa-none"></RadioGroupItem>
+                <Label className="font-normal" htmlFor="hsa-none">No Flat Opt-out</Label>
+              </div>
+              <div className="flex items-center gap-6">
+                <RadioGroupItem value="hsa-1200"></RadioGroupItem>
+                <Label className="font-normal" htmlFor="hsa-single">Single-member Flat</Label>
+                <Input className="w-fit" id="hsa-single" type="number" disabled={!override} value={6000} />
+              </div>
+              <div className="flex items-center gap-6">
+                <RadioGroupItem value="hsa-2400"></RadioGroupItem>
+                <Label className="font-normal" htmlFor="hsa-multi">Multi-member Flat</Label>
+                <Input className="w-fit" id="hsa-multi" type="number" disabled={!override} value={12000} />
+              </div>
+            </RadioGroup>
+          </Card>
+          <Card className="gap-0 pl-12">
+            <Label>HSA Equivalency</Label>
+            <RadioGroup className="mt-4">
+              <div className="flex items-center gap-6">
+                <RadioGroupItem id="hsa-none" value="hsa-none"></RadioGroupItem>
+                <Label className="font-normal" htmlFor="hsa-none">No HSA</Label>
+              </div>
+              <div className="flex items-center gap-6">
+                <RadioGroupItem value="hsa-1200"></RadioGroupItem>
+                <Label className="font-normal" htmlFor="hsa-single">HSA (Single Member)</Label>
+                <Input className="w-fit" id="hsa-single" type="number" disabled={!override} value={1200} />
+              </div>
+              <div className="flex items-center gap-6">
+                <RadioGroupItem value="hsa-2400"></RadioGroupItem>
+                <Label className="font-normal" htmlFor="hsa-multi">HSA (Multi Member)</Label>
+                <Input className="w-fit" id="hsa-multi" type="number" disabled={!override} value={2400} />
+              </div>
+            </RadioGroup>
+          </Card>
+          <Card>
+              <div className="flex items-center gap-6 ml-6">
+                <Checkbox id="hra" value="hra"></Checkbox>
+                <Label htmlFor="hra">HRA Enrollment</Label>
+              </div>
+          </Card>
         </div>
       </div>
     </div>
