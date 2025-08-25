@@ -107,7 +107,6 @@ export default function DragDropApp() {
   const [draggedCustomer, setDraggedCustomer] = useState<Customer | null>(null)
   const [dragOverResource, setDragOverResource] = useState<string | null>(null)
   const [override, setOverride] = useState<boolean>(false);
-  const [showAltResource, setShowAltResource] = useState<boolean>(false);
 
   const handleDragStart = (customer: Customer) => {
     setDraggedCustomer(customer)
