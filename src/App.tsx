@@ -6,6 +6,10 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Button } from "./components/ui/button"
+import { Plus } from "lucide-react"
+
+import { motion } from "framer-motion";
 
 import { usd } from "./lib/utils"
 import { Input } from "./components/ui/input"
@@ -26,6 +30,7 @@ interface TargetResource {
   annualIntervals?: number,
   isAltResource: boolean,
   isGovtPlan?: boolean,
+  visible: boolean,
 }
 
 const initialCustomers: Customer[] = [
@@ -43,6 +48,7 @@ const initialTargetResources: TargetResource[] = [
     description: "",
     isAltResource: false,
     assignedCustomers: [],
+    visible: true,
   },
   {
     id: "resource-2",
@@ -50,6 +56,7 @@ const initialTargetResources: TargetResource[] = [
     description: "",
     isAltResource: false,
     assignedCustomers: [],
+    visible: false,
   },
   {
     id: "resource-3",
@@ -59,7 +66,8 @@ const initialTargetResources: TargetResource[] = [
     isGovtPlan: true,
     costPerInterval: 421,
     annualIntervals: 12,
-    assignedCustomers: []
+    assignedCustomers: [],
+    visible: true,
   },
   {
     id: "resource-4",
@@ -69,16 +77,7 @@ const initialTargetResources: TargetResource[] = [
     costPerInterval: 54.12,
     annualIntervals: 26,
     assignedCustomers: [],
-  }
-]
-
-const initialTools: FinancialTool[] = [
-  {
-    name: 'Flat Opt-out Credit',
-    isUsed: false,
-    optOutTotal: 0,
-    singleCredit: 6000,
-    multiCredit: 12000,
+    visible: false,
   }
 ]
 
@@ -108,6 +107,7 @@ export default function DragDropApp() {
   const [draggedCustomer, setDraggedCustomer] = useState<Customer | null>(null)
   const [dragOverResource, setDragOverResource] = useState<string | null>(null)
   const [override, setOverride] = useState<boolean>(false);
+  const [showAltResource, setShowAltResource] = useState<boolean>(false);
 
   const handleDragStart = (customer: Customer) => {
     setDraggedCustomer(customer)
@@ -187,6 +187,18 @@ export default function DragDropApp() {
     }));
   }
 
+  const addTool = () => {
+    let id;
+    if (!targetResources.find(targetResource => targetResource.id === 'resource-2')?.visible) {
+      id = 'resource-2';
+    } else if (!targetResources.find(targetResource => targetResource.id === 'resource-4')?.visible) {
+      id = 'resource-4';
+    } else {
+      return;
+    }
+    setTargetResources(targetResources.map((targetResource) => targetResource.id === id ? {...targetResource, visible: true} : targetResource));
+  }
+
   return (
     <div className="bg-blue-50">
       <h1 className="text-3xl font-bold text-foreground p-6">Funk, Stephen Opportunity</h1>
@@ -205,7 +217,7 @@ export default function DragDropApp() {
         <div className="flex-2 bg-green-50 border border-border rounded-lg p-6">
           <h2 className="text-xl font-semibold text-foreground mb-6">Target Resources</h2>
           <div >
-            {targetResources.map((resource) => (
+            {targetResources.filter(targetResource => targetResource.visible).map((resource) => (
               <Card
                 key={resource.id}
                 className={`p-4 transition-all duration-200 gap-2 ${
@@ -238,7 +250,7 @@ export default function DragDropApp() {
                 >
                   {resource.assignedCustomers.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                      Drop members here
+                      Drop members here <Plus size={18} />
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -267,6 +279,11 @@ export default function DragDropApp() {
                 </div>
               </Card>
             ))}
+          </div>
+          <div className="flex place-content-center">
+            <motion.div whileTap={{ scale: 0.95}} transition={{ type: "spring", stiffness: 400, damping: 17 }}>
+              <Button className="mt-6" onClick={addTool}><Plus />Add New Target Resource</Button>
+            </motion.div>
           </div>
         </div>
 
